@@ -2,18 +2,13 @@
 
 Copyright (c) Alex Baldwin 2022.
 
-kontig is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License,
-version 2 exclusively, as published by the Free Software Foundation.
+This file is part of kontig.
 
-kontig is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
+kontig is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
-You should have received a copy of the GNU General Public License
-along with kontig. If not, see:
-https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt/
+kontig is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with kontig. If not, see <https://www.gnu.org/licenses/>. 
 
 */
 
