@@ -30,3 +30,10 @@
 *.exe
 *.out
 *.app
+
+# Data files for Kontig
+*.fastq
+*.kmh
+*.krf
+*.krp
+*.kcr
