@@ -13,7 +13,7 @@ KMerTree::KMerTree() {
 void KMerTree::insertKmer(KMer* kmer) {
     KMerSortingTreeNode* cnode = this->root;
     for (int j = 0; j < 64; j++) {
-        if ((kmer->quickRef >> j) & 0b1) {
+        if ((kmer->quickref >> j) & 0b1) {
             if (cnode->high == nullptr) {
                 cnode->high = new KMerSortingTreeNode();
                 cnode->high->high = nullptr;
@@ -31,18 +31,15 @@ void KMerTree::insertKmer(KMer* kmer) {
             cnode = cnode->low;
         }
     }
-    KMerLinkedList* ll = cnode->values;
-    if (ll == nullptr) {
-        ll = new KMerLinkedList();
-        ll->next = nullptr;
+    
+    if (cnode->values == nullptr) {
+        cnode->values = new KMerLinkedList();
+        cnode->values->next = nullptr;
+        cnode->values->value = kmer;
+    } else {
+        KMerLinkedList* ll = new KMerLinkedList();
+        ll->next = cnode->values;
         ll->value = kmer;
         cnode->values = ll;
-    } else {
-        while (ll->next != nullptr) {
-            ll = ll->next;
-        }
-        ll->next = new KMerLinkedList();
-        ll->next->next = nullptr;
-        ll->next->value = kmer;
     }
 }

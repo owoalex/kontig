@@ -10,10 +10,13 @@ public:
     uint8_t* qualities;
     Read* source;
     int offset;
-    uint64_t quickRef;
+    uint64_t quickref;
+    uint64_t basegc; // Denotes if base is G/C
+    uint64_t basedir; // Denotes if base is A/G
     
     KMer(char* sequence, uint8_t* qualities, Read* source, int offset, int length);
     bool isEqual(KMer* other);
+    uint16_t getMismatchedBases(KMer* other);
     uint64_t getMatchQuality(KMer* other);
 };
 

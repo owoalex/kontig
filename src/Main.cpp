@@ -28,9 +28,10 @@ You should have received a copy of the GNU General Public License along with kon
 
 int main(int argc, char** argv) {
     std::cout << "kontig DNA read assembler\n\n";
-    char* fastq_file = NULL;
-    char* map_heap_file = NULL;
+    char* input_file = NULL;
+    char* output_file = NULL;
     uint8_t kontig_mode = 0;
+    int kmer_length = 32; // 4^n = 2^2n; 128 length = 256 bits of information per kmer;
     /*
      * 0: Display help and exit
      * 1: Generate map from FASTQ file
@@ -42,33 +43,75 @@ int main(int argc, char** argv) {
     
     for (int i = 1; i < argc; ++i) {
         char* arg = argv[i];
-        if (strcmp(arg,"--fastq") == 0) {
+        if (strcmp(arg,"--input") == 0 || strcmp(arg,"-i") == 0) {
             i++;
-            fastq_file = argv[i];
+            input_file = argv[i];
             continue;
         }
-        if (strcmp(arg,"--map") == 0) {
+        if (strcmp(arg,"--output") == 0 || strcmp(arg,"-o") == 0) {
             i++;
-            map_heap_file = argv[i];
+            output_file = argv[i];
+            continue;
+        }
+        if (strcmp(arg,"--ksize") == 0) {
+            i++;
+            kmer_length = atoi(argv[i]);
+            continue;
+        }
+        if (strcmp(arg,"help") == 0 || strcmp(arg,"-h") == 0 || strcmp(arg,"--help") == 0) {
+            kontig_mode = 0;
             continue;
         }
         if (strcmp(arg,"genmap") == 0) {
             kontig_mode = 1;
             continue;
         }
+        std::cout << "Unknown command " << arg << "\n\n";
+        kontig_mode = 0;
+        break;
         //bootVmImmediate = arg;
     }
 
-    //if (fastq_file == NULL) {
+    if (kontig_mode == 0) {
+        std::cout << "General command structure\n";
+        std::cout << "kontig <mode> [options and flags]\n";
+        std::cout << "\n";
+        std::cout << "MODES:\n";
+        std::cout << "\n";
+        std::cout << "genmap - Generate .krm (kontig read map) of kmers derives from FASTQ files and connect them.\n";
+        std::cout << "[TODO] concat - Consolidates multiple .krm files into one, useful when batch processing on distributed systems.\n";
+        std::cout << "[TODO] pathfind - Find valid paths through the map to generate .krf (kontig route fragment) files.\n";
+        std::cout << "[TODO] combine - Consolidates multiple .krf files into one, useful when batch processing on distributed systems.\n";
+        std::cout << "[TODO] export - Turns .krf (kontig route fragment) files into FASTA files for further processing by other tools.\n";
+        std::cout << "\n";
+        std::cout << "OPTIONS:\n";
+        std::cout << "\n";
+        std::cout << "--input <file>\n";
+        std::cout << "-i <file>\n";
+        std::cout << "Input file(s) for the given mode. If specifying multiple files, this flag must be used multiple times.\n";
+        std::cout << "\n";
+        std::cout << "--output <file>\n";
+        std::cout << "-o <file>\n";
+        std::cout << "Output file for the given mode.\n";
+        std::cout << "\n";
+        std::cout << "--ksize <integer>\n";
+        std::cout << "Set the K-Mer size used for map generation in genmap mode. 32 is the default value if not specified.\n";
+        std::cout << "\n";
+        exit(0);
+    }
+    
+    //if (input_file == NULL) {
     //    std::cout << "Need to specify input file with '-i'.\n";
     //    exit(1);
     //}
 
-    std::ifstream input_stream(fastq_file);
+    uint64_t prog = 0;
+    
+    std::ifstream input_stream(input_file);
     
     std::unique_ptr<std::ostream> output_stream = std::make_unique<std::ostream>(std::cout.rdbuf());
     
-    output_stream = std::make_unique<std::ofstream>(map_heap_file);
+    output_stream = std::make_unique<std::ofstream>(output_file);
     
     char* input_buffer = (char*) malloc(1024);
 
@@ -99,6 +142,14 @@ int main(int argc, char** argv) {
                 total_input[input_position] = input_buffer[i];
                 input_position++;
             } 
+        }
+        
+        prog++;
+        if (prog > (1024 * 8)) {
+            printf("\33[2K\r");
+            printf("%.3f", (((double) input_position) / ((double) input_length)) * 100.0);
+            std::cout << "%" << std::flush;
+            prog = 0;
         }
         
         input_stream.read(input_buffer, 1024);
@@ -179,13 +230,13 @@ int main(int argc, char** argv) {
     }
     
     free(total_input);
-    printf("Read %d characters from FASTQ file\n", input_position);
+    printf("\rRead %d characters from FASTQ file\n", input_position);
     
     // process below
     
     KMerSet** kmer_set_set = (KMerSet**) malloc(sizeof(KMerSet*) * reads.size());
     int total_kmers = 0;
-    int kmer_length = 128; // 4^n = 2^2n; 128 length = 256 bits of information per kmer;
+    prog = 0;
     
     printf("About to generate K-Mers of length %d\n", kmer_length);
     
@@ -193,9 +244,16 @@ int main(int argc, char** argv) {
         struct KMerSet* kms = reads[i]->generateKmers(kmer_length);
         total_kmers += kms->length;
         kmer_set_set[i] = kms;
+        prog++;
+        if (prog > (1024 * 8)) {
+            printf("\33[2K\r");
+            printf("%.3f", (((double) i) / ((double) reads.size())) * 100.0);
+            std::cout << "%" << std::flush;
+            prog = 0;
+        }
     }
     
-    printf("Generated %d K-Mers\n", total_kmers);
+    printf("\rGenerated %d K-Mers\n", total_kmers);
     printf("About to sort K-Mers into tree\n");
     
     //KMer** kmers = (KMer**) malloc(sizeof(KMer*) * total_kmers);
@@ -204,7 +262,7 @@ int main(int argc, char** argv) {
     
     
     KMerTree* kmer_tree = new KMerTree();
-    uint64_t prog = 0;
+    prog = 0;
     
     for (int i = 0; i < reads.size(); i++) {
         for (int j = 0; j < kmer_set_set[i]->length; j++) {
@@ -237,7 +295,7 @@ int main(int argc, char** argv) {
         //head_kmer->quickRef;
         KMerSortingTreeNode* cnode = kmer_tree->root;
         for (int j = 0; j < 64; j++) {
-            if ((head_kmer->quickRef >> j) & 0b1) {
+            if ((head_kmer->quickref >> j) & 0b1) {
                 cnode = cnode->high;
             } else {
                 cnode = cnode->low;

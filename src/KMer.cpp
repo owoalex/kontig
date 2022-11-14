@@ -9,37 +9,60 @@ KMer::KMer(char* sequence, uint8_t* qualities, Read* source, int offset, int len
     this->qualities = qualities;
     this->source = source;
     this->offset = offset;
-    this->quickRef = 0;
-    for (int i = 0; i < this->length && i < 32; i++) {
-        this->quickRef = this->quickRef << 2;
+    this->basegc = 0;
+    this->quickref = 0;
+    this->basedir = 0;
+    for (int i = 0; i < this->length && i < 64; i++) {
+        this->basegc = this->basegc << 1;
+        this->basedir = this->basedir << 1;
         switch (this->sequence[i]) {
             case 'A':
-                this->quickRef = this->quickRef | 0b00;
+                this->basegc = this->basegc | 0b0;
+                this->basedir = this->basedir | 0b1;
                 break;
             case 'T':
-                this->quickRef = this->quickRef | 0b01;
+                this->basegc = this->basegc | 0b0;
+                this->basedir = this->basedir | 0b0;
                 break;
             case 'G':
-                this->quickRef = this->quickRef | 0b10;
+                this->basegc = this->basegc | 0b1;
+                this->basedir = this->basedir | 0b1;
                 break;
             case 'C':
-                this->quickRef = this->quickRef | 0b11;
+                this->basegc = this->basegc | 0b1;
+                this->basedir = this->basedir | 0b0;
                 break;
         }
     }
-    //this->quickRef = ;
+    this->quickref = this->basegc ^ this->basedir;
 }
 
 bool KMer::isEqual(KMer* other) {
     if (other->length != this->length) {
         return false; // We don't currently match mismatched kmers at all
     }
-    for (int i = 0; i < this->length; i++) {
-        if (this->sequence[i] != other->sequence[i]) {
-            return false;
+    if (other->basegc != this->basegc) {
+        return false;
+    }
+    if (other->basedir != this->basedir) {
+        return false;
+    }
+    if (this->length > 64) { // We only need to do sequence match on long kmers
+        for (int i = 0; i < this->length; i++) {
+            if (this->sequence[i] != other->sequence[i]) {
+                return false;
+            }
         }
     }
     return true;
+}
+
+uint16_t KMer::getMismatchedBases(KMer* other) {
+    uint64_t gcdiff = other->basegc ^ this->basegc;
+    uint64_t dirdiff = other->basedir ^ this->basedir;
+    uint64_t diff = gcdiff | dirdiff;
+    return __builtin_popcountll(diff);
+    
 }
 
 uint64_t KMer::getMatchQuality(KMer* other) {
