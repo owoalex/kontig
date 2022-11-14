@@ -22,17 +22,6 @@ struct KMerSet {
     KMer** kmers;
 };
 
-struct KMerLinkedList {
-    KMer* value;
-    KMerLinkedList* next;
-};
-
-struct KMerSortingTreeNode {
-    KMerSortingTreeNode* high;
-    KMerSortingTreeNode* low;
-    KMerLinkedList* values;
-};
-
 struct KMerEdge {
     KMer* src; // Source
     KMer* ext; // Extension

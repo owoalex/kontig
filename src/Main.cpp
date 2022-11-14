@@ -24,52 +24,51 @@ You should have received a copy of the GNU General Public License along with kon
 
 #include "Read.h"
 #include "KMer.h"
+#include "KMerTree.h"
 
 int main(int argc, char** argv) {
-    std::cout << "kontig FASTQ contig generator\n\n";
-    char* input_file = NULL;
-    char* output_file = NULL;
-
-    bool stdout_switch = true;
+    std::cout << "kontig DNA read assembler\n\n";
+    char* fastq_file = NULL;
+    char* map_heap_file = NULL;
+    uint8_t kontig_mode = 0;
+    /*
+     * 0: Display help and exit
+     * 1: Generate map from FASTQ file
+     * 2: 
+     * 
+     * 
+     * 
+     */
     
     for (int i = 1; i < argc; ++i) {
         char* arg = argv[i];
-        if (strcmp(arg,"-i") == 0) {
+        if (strcmp(arg,"--fastq") == 0) {
             i++;
-            input_file = argv[i];
+            fastq_file = argv[i];
             continue;
         }
-        if (strcmp(arg,"-o") == 0) {
+        if (strcmp(arg,"--map") == 0) {
             i++;
-            output_file = argv[i];
-            stdout_switch = false;
+            map_heap_file = argv[i];
             continue;
         }
-        if (strcmp(arg,"-stdout") == 0) {
-            stdout_switch = true;
+        if (strcmp(arg,"genmap") == 0) {
+            kontig_mode = 1;
             continue;
         }
         //bootVmImmediate = arg;
     }
 
-    if (input_file == NULL) {
-        std::cout << "Need to specify input file with '-i'.\n";
-        exit(1);
-    }
-    
-    if (stdout_switch) {
-        std::cout << input_file << " -> stdout\n";
-    } else {
-        std::cout << input_file << " -> " << output_file << "\n";
-    }
+    //if (fastq_file == NULL) {
+    //    std::cout << "Need to specify input file with '-i'.\n";
+    //    exit(1);
+    //}
 
-    std::ifstream input_stream(input_file);
+    std::ifstream input_stream(fastq_file);
     
     std::unique_ptr<std::ostream> output_stream = std::make_unique<std::ostream>(std::cout.rdbuf());
     
-    if (!stdout_switch) {
-        output_stream = std::make_unique<std::ofstream>(output_file);
-    }
+    output_stream = std::make_unique<std::ofstream>(map_heap_file);
     
     char* input_buffer = (char*) malloc(1024);
 
@@ -107,10 +106,7 @@ int main(int argc, char** argv) {
         still_readable = chars_read > 0;
     } while (still_readable);
     
-    //(*output_stream).write(total_output, total_output_length);
-    
     free(input_buffer);
-    //exit(0);
     
     // Now parse the file
     
@@ -189,115 +185,57 @@ int main(int argc, char** argv) {
     
     KMerSet** kmer_set_set = (KMerSet**) malloc(sizeof(KMerSet*) * reads.size());
     int total_kmers = 0;
+    int kmer_length = 128; // 4^n = 2^2n; 128 length = 256 bits of information per kmer;
     
-    int kmer_length = 128;
+    printf("About to generate K-Mers of length %d\n", kmer_length);
     
     for (int i = 0; i < reads.size(); i++) {
-        //printf("%s : %d", read->name, read->length);
-        struct KMerSet* kms = reads[i]->generateKmers(kmer_length); // 4^n  = 2^2n
+        struct KMerSet* kms = reads[i]->generateKmers(kmer_length);
         total_kmers += kms->length;
         kmer_set_set[i] = kms;
-        //printf("%s : %d", read->sequence, kms->length);
-        //*output_stream << "\n";
     }
     
-    printf("Generated %d kmers\n", total_kmers);
+    printf("Generated %d K-Mers\n", total_kmers);
+    printf("About to sort K-Mers into tree\n");
     
-    KMer** kmers = (KMer**) malloc(sizeof(KMer*) * total_kmers);
+    //KMer** kmers = (KMer**) malloc(sizeof(KMer*) * total_kmers);
     
-    int current_kmer = 0;
+    //int current_kmer = 0;
+    
+    
+    KMerTree* kmer_tree = new KMerTree();
+    uint64_t prog = 0;
     
     for (int i = 0; i < reads.size(); i++) {
         for (int j = 0; j < kmer_set_set[i]->length; j++) {
+            kmer_tree->insertKmer(kmer_set_set[i]->kmers[j]);
             
-            kmers[current_kmer] = kmer_set_set[i]->kmers[j];
-            current_kmer++;
+            prog++;
+            if (prog > (1024 * 64)) {
+                printf("\33[2K\r");
+                printf("%.3f", (((double) i) / ((double) reads.size())) * 100.0);
+                std::cout << "%" << std::flush;
+                prog = 0;
+            }
         }
     }
     
     free(kmer_set_set);
-    
-    //for (int i = 0; i < total_kmers; i++) {
-        //printf("%.16s\n", kmers[i]->sequence);
-    //}
-    
-    printf("%d K-Mers about to be sorted\n", total_kmers);
-    
-    uint64_t prog = 0;
-    
-    // KMers prepared
-    // Now sort KMers
-    
-    KMerSortingTreeNode* root_kmer_node = new KMerSortingTreeNode();
-    root_kmer_node->high = nullptr;
-    root_kmer_node->low = nullptr;
-    root_kmer_node->values = nullptr;
-    
-    
-    
-    for (int i = 0; i < total_kmers; i++) {
-        KMerSortingTreeNode* cnode = root_kmer_node;
-        for (int j = 0; j < 64; j++) {
-            if ((kmers[i]->quickRef >> j) & 0b1) {
-                if (cnode->high == nullptr) {
-                    cnode->high = new KMerSortingTreeNode();
-                    cnode->high->high = nullptr;
-                    cnode->high->low = nullptr;
-                    cnode->high->values = nullptr;
-                }
-                cnode = cnode->high;
-            } else {
-                if (cnode->low == nullptr) {
-                    cnode->low = new KMerSortingTreeNode();
-                    cnode->low->high = nullptr;
-                    cnode->low->low = nullptr;
-                    cnode->low->values = nullptr;
-                }
-                cnode = cnode->low;
-            }
-        }
-        KMerLinkedList* ll = cnode->values;
-        if (ll == nullptr) {
-            ll = new KMerLinkedList();
-            ll->next = nullptr;
-            ll->value = kmers[i];
-            cnode->values = ll;
-        } else {
-            while (ll->next != nullptr) {
-                ll = ll->next;
-            }
-            ll->next = new KMerLinkedList();
-            ll->next->next = nullptr;
-            ll->next->value = kmers[i];
-        }
-        
-        prog++;
-        if (prog > (1024 * 64)) {
-            printf("\33[2K\r");
-            printf("%.3f", (((double) i) / ((double) total_kmers)) * 100.0);
-            std::cout << "%" << std::flush;
-            //fflush();
-            prog = 0;
-        }
-    }
-    
     printf("\rK-Mers loaded into tree\n");
     
     // Now connect KMers
 
-    std::vector<KMerEdge*> kmer_graph;
-    
-    prog = 0;
-    
     printf("Connecting K-Mers\n");
     
     uint64_t total_connections = 0;
+    prog = 0;
+    std::vector<KMerEdge*> kmer_graph;
     
     for (int i = 0; i < reads.size(); i++) {
         KMer* head_kmer = reads[i]->kmers->kmers[0];
         //KMer* tail_kmer = reads[i]->kmers->kmers[reads[i]->kmers->length];
         //head_kmer->quickRef;
-        KMerSortingTreeNode* cnode = root_kmer_node;
+        KMerSortingTreeNode* cnode = kmer_tree->root;
         for (int j = 0; j < 64; j++) {
             if ((head_kmer->quickRef >> j) & 0b1) {
                 cnode = cnode->high;
@@ -305,9 +243,6 @@ int main(int argc, char** argv) {
                 cnode = cnode->low;
             }
         }
-        //if (cnode->values == nullptr) {
-        //    printf("uwu");
-        //}
         KMerLinkedList* ll = cnode->values;
         while (ll != nullptr) {
             KMer* candidate_kmer = ll->value;
