@@ -269,7 +269,7 @@ int main(int argc, char** argv) {
             kmer_tree->insertKmer(kmer_set_set[i]->kmers[j]);
             
             prog++;
-            if (prog > (1024 * 64)) {
+            if (prog > (1024 * 256)) {
                 printf("\33[2K\r");
                 printf("%.3f", (((double) i) / ((double) reads.size())) * 100.0);
                 std::cout << "%" << std::flush;
@@ -305,7 +305,6 @@ int main(int argc, char** argv) {
         while (ll != nullptr) {
             KMer* candidate_kmer = ll->value;
             if (head_kmer->source != candidate_kmer->source) {
-                //printf("0x%08lx == 0x%08lx\n", kmers[i]->quickRef, kmers[j]->quickRef);
                 if (head_kmer->isEqual(candidate_kmer)) {
                     KMerEdge* kmer_node = new KMerEdge();
                     kmer_node->src = candidate_kmer;
