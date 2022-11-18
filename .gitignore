@@ -33,7 +33,7 @@
 
 # Data files for Kontig
 *.fastq
-*.kmh
+*.kmf
 *.krf
 *.krp
 *.kcr
