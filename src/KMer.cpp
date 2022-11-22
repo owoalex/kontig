@@ -65,8 +65,8 @@ uint16_t KMer::getMismatchedBases(KMer* other) {
     
 }
 
-uint64_t KMer::getMatchQuality(KMer* other) {
-    uint64_t q = 0;
+int64_t KMer::getMatchQuality(KMer* other) {
+    int64_t q = 0;
     if (other->length != this->length) {
         return q; // We don't currently match mismatched kmers at all
     }

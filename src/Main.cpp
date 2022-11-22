@@ -25,6 +25,8 @@ You should have received a copy of the GNU General Public License along with kon
 #include "Read.h"
 #include "KMer.h"
 #include "KMerTree.h"
+#include "ProposedContig.h"
+#include "Contig.h"
 
 int main(int argc, char** argv) {
     std::cout << "kontig DNA read assembler\n\n";
@@ -240,7 +242,7 @@ int main(int argc, char** argv) {
     
     printf("About to generate K-Mers of length %d\n", kmer_length);
     
-    for (int i = 0; i < reads.size(); i++) {
+    for (std::vector<Read*>::size_type i = 0; i < reads.size(); i++) {
         struct KMerSet* kms = reads[i]->generateKmers(kmer_length);
         total_kmers += kms->length;
         kmer_set_set[i] = kms;
@@ -264,7 +266,7 @@ int main(int argc, char** argv) {
     KMerTree* kmer_tree = new KMerTree();
     prog = 0;
     
-    for (int i = 0; i < reads.size(); i++) {
+    for (std::vector<Read*>::size_type i = 0; i < reads.size(); i++) {
         for (int j = 0; j < kmer_set_set[i]->length; j++) {
             kmer_tree->insertKmer(kmer_set_set[i]->kmers[j]);
             
@@ -289,7 +291,7 @@ int main(int argc, char** argv) {
     prog = 0;
     std::vector<KMerEdge*> kmer_graph;
     
-    for (int i = 0; i < reads.size(); i++) {
+    for (std::vector<Read*>::size_type i = 0; i < reads.size(); i++) {
         KMer* head_kmer = reads[i]->kmers->kmers[0];
         //KMer* tail_kmer = reads[i]->kmers->kmers[reads[i]->kmers->length];
         //head_kmer->quickRef;
@@ -306,11 +308,13 @@ int main(int argc, char** argv) {
             KMer* candidate_kmer = ll->value;
             if (head_kmer->source != candidate_kmer->source) {
                 if (head_kmer->isEqual(candidate_kmer)) {
-                    KMerEdge* kmer_node = new KMerEdge();
-                    kmer_node->src = candidate_kmer;
-                    kmer_node->ext = head_kmer;
-                    //kmer_node->weight = head_kmer->getMatchQuality(kmers[j]);
-                    kmer_graph.push_back(kmer_node);
+                    KMerEdge* kmer_edge = new KMerEdge();
+                    kmer_edge->src = candidate_kmer;
+                    kmer_edge->ext = head_kmer;
+                    kmer_edge->weight = head_kmer->getMatchQuality(candidate_kmer);
+                    kmer_graph.push_back(kmer_edge);
+                    candidate_kmer->kmerEdgesForward.push_back(kmer_edge);
+                    head_kmer->kmerEdgesBackward.push_back(kmer_edge);
                     total_connections++;
                     prog++;
                     if (prog > (1024 * 64)) {
@@ -330,8 +334,59 @@ int main(int argc, char** argv) {
     
     // Connections made, time to make proposed contigs via greedy algorithm
     
+    prog = 0;
+    uint64_t total_contigs = 0;
+    
+    uint64_t starting_edge = 32; // This will be random eventually for multithreading
+    KMerEdge* current_edge;
+    ProposedContig* current_contig;
+    Contig* generated_contig;
+    
+    current_edge = kmer_graph[starting_edge];
+    current_contig = new ProposedContig(current_edge);
+    
+    KMer* end = current_edge->ext;
+    while (true) {
+        KMerEdge* best_forward = nullptr;
+        int64_t max_weight = 0;
+        for (std::vector<KMerEdge*>::size_type i = 0; i < end->kmerEdgesForward.size(); i++) {
+            if (max_weight < end->kmerEdgesForward[i]->weight) {
+                best_forward = end->kmerEdgesForward[i];
+                max_weight = end->kmerEdgesForward[i]->weight;
+            }
+        }
+        if (best_forward != nullptr) {
+            current_contig->addKmerForward(best_forward);
+            end = best_forward->ext;
+        }
+        KMerEdge* best_backward = nullptr;
+        //KMer* start = current_contig->kmers.back();
+        if (best_forward == nullptr && best_backward == nullptr) {
+            break;
+        }
+    }
+    generated_contig = current_contig->exportContig();
+    
+    /* for (std::vector<KMerEdge*>::size_type i = 0; i < kmer_graph.size(); i++) {
+        
+        while (true) {
+            //kmer_graph[i]
+            break;
+        }
+        
+        prog++;
+        if (prog > (1024 * 256)) {
+            printf("\33[2K\r");
+            printf("%.3f", (((double) i) / ((double) kmer_graph.size())) * 100.0);
+            std::cout << "%" << std::flush;
+            prog = 0;
+        }
+    } */
     
     
+    printf("\r%s\n", generated_contig->sequence);
+    
+    printf("\rMade %ld contigs\n", total_connections);
     // process above
     
     *output_stream << "\n";
