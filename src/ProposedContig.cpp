@@ -38,6 +38,7 @@ void ProposedContig::addKmerBackward(KMerEdge* kmerEdge) {
 
 Contig* ProposedContig::exportContig() {
     Read* pop = this->reads.front();
+    this->swapReads.push_front(pop);
     int64_t popOffset;
     uint64_t accumulatedOffset = 0;
     char* sequence = (char*) malloc(this->length + 1);

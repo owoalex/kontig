@@ -288,6 +288,7 @@ int main(int argc, char** argv) {
     printf("Connecting K-Mers\n");
     
     uint64_t total_connections = 0;
+    uint16_t minimum_distance = 8;
     prog = 0;
     std::vector<KMerEdge*> kmer_graph;
     
@@ -307,25 +308,29 @@ int main(int argc, char** argv) {
         while (ll != nullptr) {
             KMer* candidate_kmer = ll->value;
             if (head_kmer->source != candidate_kmer->source) {
-                if (head_kmer->isEqual(candidate_kmer)) {
-                    int64_t match_quality = head_kmer->getMatchQuality(candidate_kmer);
-                    
-                    KMerEdge* kmer_edge = new KMerEdge();
-                    kmer_edge->src = candidate_kmer;
-                    kmer_edge->ext = head_kmer;
-                    kmer_edge->weight = match_quality;
-                    kmer_graph.push_back(kmer_edge);
-                    candidate_kmer->kmerEdgesForward.push_back(kmer_edge);
-                    head_kmer->kmerEdgesBackward.push_back(kmer_edge);
-                    
-                    total_connections++;
-                    prog++;
-                    if (prog > (1024 * 256)) {
-                        printf("\33[2K\r");
-                        printf("%.3f", (((double) i) / ((double) reads.size())) * 100.0);
-                        std::cout << "%" << std::flush;
-                        //printf("%s EXTENDS TO\n%s\n", candidate_kmer->sequence, head_kmer->sequence);
-                        prog = 0;
+                if (candidate_kmer->offset > minimum_distance) { // Let's not bother with kmers that won't extend much
+                    if (head_kmer->isEqual(candidate_kmer)) {
+                        int64_t match_quality = head_kmer->getMatchQuality(candidate_kmer);
+                        
+                        KMerEdge* kmer_edge = new KMerEdge();
+                        kmer_edge->src = candidate_kmer;
+                        kmer_edge->ext = head_kmer;
+                        kmer_edge->weight = match_quality;
+                        kmer_graph.push_back(kmer_edge);
+                        //candidate_kmer->kmerEdgesForward.push_back(kmer_edge);
+                        //head_kmer->kmerEdgesBackward.push_back(kmer_edge);
+                        candidate_kmer->source->kmerEdgesForward.push_back(kmer_edge);
+                        head_kmer->source->kmerEdgesBackward.push_back(kmer_edge);
+                        
+                        total_connections++;
+                        prog++;
+                        if (prog > (1024 * 256)) {
+                            printf("\33[2K\r");
+                            printf("%.3f", (((double) i) / ((double) reads.size())) * 100.0);
+                            std::cout << "%" << std::flush;
+                            //printf("%s EXTENDS TO\n%s\n", candidate_kmer->sequence, head_kmer->sequence);
+                            prog = 0;
+                        }
                     }
                 }
             }
@@ -349,29 +354,36 @@ int main(int argc, char** argv) {
         current_edge = kmer_graph[i];
         current_contig = new ProposedContig(current_edge);
         
-        KMer* end = current_edge->ext;
+        Read* end = current_edge->ext->source;
         while (true) {
             KMerEdge* best_forward = nullptr;
             int64_t max_weight = 0;
             for (std::vector<KMerEdge*>::size_type i = 0; i < end->kmerEdgesForward.size(); i++) {
                 if (end->kmerEdgesForward[i]->weight > max_weight) {
-                    best_forward = end->kmerEdgesForward[i];
-                    max_weight = end->kmerEdgesForward[i]->weight;
+                    if (end != end->kmerEdgesForward[i]->ext->source) {
+                        best_forward = end->kmerEdgesForward[i];
+                        max_weight = end->kmerEdgesForward[i]->weight;
+                    }
                 }
             }
             if (best_forward != nullptr) {
                 current_contig->addKmerForward(best_forward);
-                end = best_forward->ext;
+                end = best_forward->ext->source;
             }
             KMerEdge* best_backward = nullptr;
             //KMer* start = current_contig->kmers.back();
             if (best_forward == nullptr && best_backward == nullptr) {
                 break;
             }
+            if (current_contig->length > 1024) {
+                printf("Contig reached length of %d\n", current_contig->length);
+                generated_contig = current_contig->exportContig();
+                printf("> %s\n", generated_contig->sequence);
+            }
         }
-        printf("Exporting contig of length %d\n", current_contig->length);
+        printf("EXPORT AT LENGTH %d\n", current_contig->length);
         generated_contig = current_contig->exportContig();
-        printf("\r%s\n", generated_contig->sequence);
+        printf("> %s\n", generated_contig->sequence);
         
         prog++;
         if (prog > (1024 * 16)) {
