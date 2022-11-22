@@ -340,36 +340,47 @@ int main(int argc, char** argv) {
     prog = 0;
     uint64_t total_contigs = 0;
     
-    uint64_t starting_edge = 32; // This will be random eventually for multithreading
+    //uint64_t starting_edge = 32; // This will be random eventually for multithreading
     KMerEdge* current_edge;
     ProposedContig* current_contig;
     Contig* generated_contig;
     
-    current_edge = kmer_graph[starting_edge];
-    current_contig = new ProposedContig(current_edge);
-    
-    KMer* end = current_edge->ext;
-    while (true) {
-        KMerEdge* best_forward = nullptr;
-        int64_t max_weight = 0;
-        for (std::vector<KMerEdge*>::size_type i = 0; i < end->kmerEdgesForward.size(); i++) {
-            if (max_weight < end->kmerEdgesForward[i]->weight) {
-                best_forward = end->kmerEdgesForward[i];
-                max_weight = end->kmerEdgesForward[i]->weight;
+    for (std::vector<KMerEdge*>::size_type i = 0; i < kmer_graph.size(); i++) {
+        current_edge = kmer_graph[i];
+        current_contig = new ProposedContig(current_edge);
+        
+        KMer* end = current_edge->ext;
+        while (true) {
+            KMerEdge* best_forward = nullptr;
+            int64_t max_weight = 0;
+            for (std::vector<KMerEdge*>::size_type i = 0; i < end->kmerEdgesForward.size(); i++) {
+                if (end->kmerEdgesForward[i]->weight > max_weight) {
+                    best_forward = end->kmerEdgesForward[i];
+                    max_weight = end->kmerEdgesForward[i]->weight;
+                }
+            }
+            if (best_forward != nullptr) {
+                current_contig->addKmerForward(best_forward);
+                end = best_forward->ext;
+            }
+            KMerEdge* best_backward = nullptr;
+            //KMer* start = current_contig->kmers.back();
+            if (best_forward == nullptr && best_backward == nullptr) {
+                break;
             }
         }
-        if (best_forward != nullptr) {
-            current_contig->addKmerForward(best_forward);
-            end = best_forward->ext;
-        }
-        KMerEdge* best_backward = nullptr;
-        //KMer* start = current_contig->kmers.back();
-        if (best_forward == nullptr && best_backward == nullptr) {
-            break;
+        printf("Exporting contig of length %d\n", current_contig->length);
+        generated_contig = current_contig->exportContig();
+        printf("\r%s\n", generated_contig->sequence);
+        
+        prog++;
+        if (prog > (1024 * 16)) {
+            printf("\33[2K\r");
+            printf("%.3f", (((double) i) / ((double) kmer_graph.size())) * 100.0);
+            std::cout << "%" << std::flush;
+            prog = 0;
         }
     }
-    printf("Exporting contig of length %d\n", current_contig->length);
-    generated_contig = current_contig->exportContig();
     
     /* for (std::vector<KMerEdge*>::size_type i = 0; i < kmer_graph.size(); i++) {
         
@@ -388,9 +399,9 @@ int main(int argc, char** argv) {
     } */
     
     
-    printf("\r%s\n", generated_contig->sequence);
     
-    printf("\rMade %ld contigs\n", total_connections);
+    
+    //printf("\rMade %ld contigs\n", total_connections);
     // process above
     
     *output_stream << "\n";
