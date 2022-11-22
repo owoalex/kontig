@@ -308,16 +308,19 @@ int main(int argc, char** argv) {
             KMer* candidate_kmer = ll->value;
             if (head_kmer->source != candidate_kmer->source) {
                 if (head_kmer->isEqual(candidate_kmer)) {
+                    int64_t match_quality = head_kmer->getMatchQuality(candidate_kmer);
+                    
                     KMerEdge* kmer_edge = new KMerEdge();
                     kmer_edge->src = candidate_kmer;
                     kmer_edge->ext = head_kmer;
-                    kmer_edge->weight = head_kmer->getMatchQuality(candidate_kmer);
+                    kmer_edge->weight = match_quality;
                     kmer_graph.push_back(kmer_edge);
                     candidate_kmer->kmerEdgesForward.push_back(kmer_edge);
                     head_kmer->kmerEdgesBackward.push_back(kmer_edge);
+                    
                     total_connections++;
                     prog++;
-                    if (prog > (1024 * 64)) {
+                    if (prog > (1024 * 256)) {
                         printf("\33[2K\r");
                         printf("%.3f", (((double) i) / ((double) reads.size())) * 100.0);
                         std::cout << "%" << std::flush;
@@ -365,6 +368,7 @@ int main(int argc, char** argv) {
             break;
         }
     }
+    printf("Exporting contig of length %d\n", current_contig->length);
     generated_contig = current_contig->exportContig();
     
     /* for (std::vector<KMerEdge*>::size_type i = 0; i < kmer_graph.size(); i++) {

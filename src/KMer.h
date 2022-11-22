@@ -35,7 +35,6 @@ struct KMerEdge {
     KMer* src; // Source
     KMer* ext; // Extension
     int64_t weight;
-    uint64_t distance;
 };
 
 #endif

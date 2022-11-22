@@ -14,7 +14,6 @@ public:
     int length; // Length of the total proposed contig.
     std::deque<Read*> reads; // Should be reads with relative offsets
     std::deque<int64_t> readOffsets;
-    uint64_t endOffset;
     uint64_t startOffset;
     std::vector<uint64_t> usedQuickrefs;
     
