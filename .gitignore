@@ -30,6 +30,7 @@
 *.exe
 *.out
 *.app
+build/kontig
 
 # Data files for Kontig
 *.fastq
