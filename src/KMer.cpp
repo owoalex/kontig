@@ -47,8 +47,8 @@ bool KMer::isEqual(KMer* other) {
     if (other->basedir != this->basedir) {
         return false;
     }
-    if (this->length > 64) { // We only need to do sequence match on long kmers
-        for (int i = 0; i < this->length; i++) {
+    if (this->length > 64) { // We only need to do remaining sequence match on long kmers
+        for (int i = 64; i < this->length; i++) {
             if (this->sequence[i] != other->sequence[i]) {
                 return false;
             }

@@ -32,11 +32,9 @@ void ProposedContig::addKmerForward(KMerEdge* kmerEdge) {
 }
 
 void ProposedContig::addKmerBackward(KMerEdge* kmerEdge) {
-    /*
-    this->reads.push_front(kmerEdge->src->source);
-    this->readOffsets.push_front(kmerEdge->distance);
-    this->startOffset += kmerEdge->distance;
-    this->length += kmerEdge->distance;*/
+    this->readOffsets->push_front(kmerEdge->src->offset - kmerEdge->ext->offset); // The next read should be overlayed ahead by the src match less the ext (although in current implementation it is always 0) 
+    this->reads->push_front(kmerEdge->src->source);
+    this->length += kmerEdge->src->offset - kmerEdge->ext->offset + kmerEdge->ext->source->length - kmerEdge->src->source->length; // Add the overhang length, account for reads of different length
 }
 
 Contig* ProposedContig::exportContig() {
@@ -51,7 +49,6 @@ Contig* ProposedContig::exportContig() {
     while (!this->reads->empty()) {
         for (int i = 0; i < (pop->length); i++) {
             sequence[i + accumulatedOffset] = pop->sequence[i];
-            //sequence[i + accumulatedOffset] = 'a';
         }
         pop = this->reads->front();
         this->reads->pop_front();

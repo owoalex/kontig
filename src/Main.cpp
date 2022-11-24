@@ -111,9 +111,7 @@ int main(int argc, char** argv) {
     
     std::ifstream input_stream(input_file);
     
-    std::unique_ptr<std::ostream> output_stream = std::make_unique<std::ostream>(std::cout.rdbuf());
-    
-    output_stream = std::make_unique<std::ofstream>(output_file);
+    std::ofstream output_stream(output_file);
     
     char* input_buffer = (char*) malloc(1024);
 
@@ -355,6 +353,7 @@ int main(int argc, char** argv) {
         current_contig = new ProposedContig(current_edge);
         
         Read* end = current_edge->ext->source;
+        Read* start = current_edge->src->source;
         while (true) {
             KMerEdge* best_forward = nullptr;
             int64_t max_weight = 0;
@@ -371,14 +370,35 @@ int main(int argc, char** argv) {
                 end = best_forward->ext->source;
             }
             KMerEdge* best_backward = nullptr;
+            max_weight = 0;
+            for (std::vector<KMerEdge*>::size_type i = 0; i < start->kmerEdgesBackward.size(); i++) {
+                if (start->kmerEdgesBackward[i]->weight > max_weight) {
+                    if (start != start->kmerEdgesBackward[i]->src->source) {
+                        best_backward = start->kmerEdgesBackward[i];
+                        max_weight = start->kmerEdgesBackward[i]->weight;
+                    }
+                }
+            }
+            if (best_backward != nullptr) {
+                current_contig->addKmerBackward(best_backward);
+                start = best_backward->src->source;
+            }
             //KMer* start = current_contig->kmers.back();
             if (best_forward == nullptr && best_backward == nullptr) {
                 break;
             }
         }
-        printf("EXPORT AT LENGTH %d\n", current_contig->length);
+        //printf("EXPORT AT LENGTH %d\n", current_contig->length);
         generated_contig = current_contig->exportContig();
-        printf("> %s\n", generated_contig->sequence);
+        //printf("> %s\n", generated_contig->sequence);
+        
+        char name[1024];
+        sprintf(name, ">contig-%ld len=%d ofnreads=%ld", i, current_contig->length, current_contig->reads->size());
+        output_stream << std::string(name) << "\n";
+        output_stream << std::string(generated_contig->sequence) << "\n";
+        //fprintf(output_stream, "> contig-%d-len-%d\n", i, current_contig->length);
+        //fprintf(output_stream, "%s\n", generated_contig->sequence)
+        total_contigs++;
         
         prog++;
         if (prog > (1024 * 16)) {
@@ -408,10 +428,10 @@ int main(int argc, char** argv) {
     
     
     
-    //printf("\rMade %ld contigs\n", total_connections);
+    printf("\rMade %ld contigs\n", total_contigs);
     // process above
     
-    *output_stream << "\n";
+    output_stream << "\n";
     
     
     
