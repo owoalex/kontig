@@ -7,15 +7,12 @@
 #include "KMer.h"
 
 class ProposedContig {
-private:
-    std::deque<Read*> swapReads;
-    std::deque<int64_t> swapReadOffsets;
 public:
     int length; // Length of the total proposed contig.
-    std::deque<Read*> reads; // Should be reads with relative offsets
-    std::deque<int64_t> readOffsets;
+    std::deque<Read*>* reads; // Should be reads with relative offsets
+    std::deque<int64_t>* readOffsets;
     uint64_t startOffset;
-    std::vector<uint64_t> usedQuickrefs;
+    std::vector<uint64_t>* usedQuickrefs;
     
     ProposedContig(KMerEdge* initialEdge);
     Contig* exportContig();

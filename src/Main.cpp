@@ -375,11 +375,6 @@ int main(int argc, char** argv) {
             if (best_forward == nullptr && best_backward == nullptr) {
                 break;
             }
-            if (current_contig->length > 1024) {
-                printf("Contig reached length of %d\n", current_contig->length);
-                generated_contig = current_contig->exportContig();
-                printf("> %s\n", generated_contig->sequence);
-            }
         }
         printf("EXPORT AT LENGTH %d\n", current_contig->length);
         generated_contig = current_contig->exportContig();
