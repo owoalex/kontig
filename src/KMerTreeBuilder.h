@@ -1,5 +1,5 @@
-#ifndef KMER_TREE_H
-#define KMER_TREE_H
+#ifndef KMER_TREE_BUILDER_H
+#define KMER_TREE_BUILDER_H
 
 class KMer;
 
@@ -14,11 +14,11 @@ struct KMerSortingTreeNode {
     KMerLinkedList* values;
 };
 
-class KMerTree {
+class KMerTreeBuilder {
 public:
     KMerSortingTreeNode* root;
     
-    KMerTree();
+    KMerTreeBuilder();
     void insertKmer(KMer* kmer);
 };
 

@@ -15,6 +15,7 @@ public:
     KMerSet* kmers;
     std::vector<KMerEdge*> kmerEdgesForward;
     std::vector<KMerEdge*> kmerEdgesBackward;
+    uint64_t usedNTimes;
     
     Read(char* name, char* sequence, char* qualities);
     KMerSet* generateKmers(int kmerLength);

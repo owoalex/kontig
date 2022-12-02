@@ -1,16 +1,16 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "KMer.h"
-#include "KMerTree.h"
+#include "KMerTreeBuilder.h"
 
-KMerTree::KMerTree() {
+KMerTreeBuilder::KMerTreeBuilder() {
     this->root = new KMerSortingTreeNode();
     this->root->high = nullptr;
     this->root->low = nullptr;
     this->root->values = nullptr;
 }
 
-void KMerTree::insertKmer(KMer* kmer) {
+void KMerTreeBuilder::insertKmer(KMer* kmer) {
     KMerSortingTreeNode* cnode = this->root;
     for (int j = 0; j < 64; j++) {
         if ((kmer->quickref >> j) & 0b1) {

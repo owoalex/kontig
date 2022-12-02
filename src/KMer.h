@@ -6,6 +6,7 @@
 class Read;
 
 struct KMerEdge;
+class ProposedContig;
 
 class KMer {
 public:
@@ -19,6 +20,8 @@ public:
     uint64_t basedir; // Denotes if base is A/G
     std::vector<KMerEdge*> kmerEdgesForward;
     std::vector<KMerEdge*> kmerEdgesBackward;
+    std::vector<ProposedContig*> usedIn;
+    uint64_t usedNTimes;
     
     KMer(char* sequence, uint8_t* qualities, Read* source, int offset, int length);
     bool isEqual(KMer* other);

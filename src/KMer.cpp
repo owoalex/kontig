@@ -12,6 +12,7 @@ KMer::KMer(char* sequence, uint8_t* qualities, Read* source, int offset, int len
     this->basegc = 0;
     this->quickref = 0;
     this->basedir = 0;
+    this->usedNTimes = 0;
     for (int i = 0; i < this->length && i < 64; i++) {
         this->basegc = this->basegc << 1;
         this->basedir = this->basedir << 1;

@@ -16,6 +16,7 @@ Read::Read(char* name, char* sequence, char* qualities) {
     for (int i = 0; i < this->length; i++) {
         this->qualities[i] = qualities[i] - 0x21;
     }
+    this->usedNTimes = 0;
 }
 
 KMerSet* Read::generateKmers(int kmerLength) {

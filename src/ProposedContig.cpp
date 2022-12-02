@@ -23,18 +23,26 @@ ProposedContig::ProposedContig(KMerEdge* initialEdge) {
     this->readOffsets->push_back(initialEdge->src->offset - initialEdge->ext->offset); // The next read should be overlayed ahead by the src match less the ext (although in current implementation it is always 0) 
     this->reads->push_back(initialEdge->ext->source);
     this->length += initialEdge->src->offset - initialEdge->ext->offset + initialEdge->ext->source->length - initialEdge->src->source->length; // Add the overhang length, account for reads of different length
+    initialEdge->src->usedIn.push_back(this);
+    initialEdge->ext->usedIn.push_back(this);
+    initialEdge->src->usedNTimes++;
+    initialEdge->ext->usedNTimes++;
 }
 
 void ProposedContig::addKmerForward(KMerEdge* kmerEdge) {
     this->readOffsets->push_back(kmerEdge->src->offset - kmerEdge->ext->offset); // The next read should be overlayed ahead by the src match less the ext (although in current implementation it is always 0) 
     this->reads->push_back(kmerEdge->ext->source);
     this->length += kmerEdge->src->offset - kmerEdge->ext->offset + kmerEdge->ext->source->length - kmerEdge->src->source->length; // Add the overhang length, account for reads of different length
+    kmerEdge->src->usedIn.push_back(this);
+    kmerEdge->src->usedNTimes++;
 }
 
 void ProposedContig::addKmerBackward(KMerEdge* kmerEdge) {
     this->readOffsets->push_front(kmerEdge->src->offset - kmerEdge->ext->offset); // The next read should be overlayed ahead by the src match less the ext (although in current implementation it is always 0) 
     this->reads->push_front(kmerEdge->src->source);
     this->length += kmerEdge->src->offset - kmerEdge->ext->offset + kmerEdge->ext->source->length - kmerEdge->src->source->length; // Add the overhang length, account for reads of different length
+    kmerEdge->ext->usedIn.push_back(this);
+    kmerEdge->ext->usedNTimes++;
 }
 
 Contig* ProposedContig::exportContig() {
