@@ -2,6 +2,7 @@
 #define KMER_TREE_BUILDER_H
 
 class KMer;
+class KMerTree;
 
 struct KMerLinkedList {
     KMer* value;
@@ -20,6 +21,7 @@ public:
     
     KMerTreeBuilder();
     void insertKmer(KMer* kmer);
+    KMerTree* build();
 };
 
 #endif

@@ -288,8 +288,12 @@ int main(int argc, char** argv) {
         //free(kmer_set_set);
         printf("\rK-Mers loaded into tree\n");
         
+        
+        
         // Now connect KMers
 
+        
+        
         printf("Connecting K-Mers\n");
         
         uint64_t total_connections = 0;
@@ -303,7 +307,7 @@ int main(int argc, char** argv) {
             //KMer* tail_kmer = reads[i]->kmers->kmers[reads[i]->kmers->length];
             //head_kmer->quickRef;
             KMerSortingTreeNode* cnode = kmer_tree->root;
-            for (int j = 0; j < 64; j++) {
+            for (int j = 0; j < 16; j++) {
                 if ((head_kmer->quickref >> j) & 0b1) {
                     cnode = cnode->high;
                 } else {
@@ -348,6 +352,7 @@ int main(int argc, char** argv) {
         
         printf("\rMade %ld connections\n", total_connections);
         
+        
         // Connections made, time to make proposed contigs via greedy algorithm
         
         prog = 0;
@@ -357,7 +362,8 @@ int main(int argc, char** argv) {
         KMerEdge* current_edge;
         ProposedContig* current_contig;
         Contig* generated_contig;
-        
+        uint64_t seed_count = 128;
+
         for (std::vector<KMerEdge*>::size_type i = 0; i < kmer_graph.size(); i++) {
             current_edge = kmer_graph[i];
             current_contig = new ProposedContig(current_edge);
@@ -372,10 +378,10 @@ int main(int argc, char** argv) {
                 for (std::vector<KMerEdge*>::size_type i = 0; i < end->kmerEdgesForward.size(); i++) {
                     if (end->kmerEdgesForward[i]->weight > max_weight) {
                         if (end != end->kmerEdgesForward[i]->ext->source) {
-                            if (best_forward->ext->source->usedNTimes == 0) {
+                            //if (end->kmerEdgesForward[i]->ext->source->usedNTimes == 0) {
                                 best_forward = end->kmerEdgesForward[i];
                                 max_weight = end->kmerEdgesForward[i]->weight;
-                            }
+                            //}
                         }
                     }
                 }
@@ -384,15 +390,17 @@ int main(int argc, char** argv) {
                     end = best_forward->ext->source;
                     end->usedNTimes++;
                 }
+                
                 KMerEdge* best_backward = nullptr;
+                
                 max_weight = 0;
                 for (std::vector<KMerEdge*>::size_type i = 0; i < start->kmerEdgesBackward.size(); i++) {
                     if (start->kmerEdgesBackward[i]->weight > max_weight) {
                         if (start != start->kmerEdgesBackward[i]->src->source) {
-                            if (best_forward->src->source->usedNTimes == 0) {
+                            //if (start->kmerEdgesBackward[i]->src->source->usedNTimes == 0) {
                                 best_backward = start->kmerEdgesBackward[i];
                                 max_weight = start->kmerEdgesBackward[i]->weight;
-                            }
+                            //}
                         }
                     }
                 }
@@ -401,6 +409,7 @@ int main(int argc, char** argv) {
                     start = best_backward->src->source;
                     start->usedNTimes++;
                 }
+                
                 //KMer* start = current_contig->kmers.back();
                 if (best_forward == nullptr && best_backward == nullptr) {
                     break;
@@ -427,27 +436,10 @@ int main(int argc, char** argv) {
             }
         }
         
-        /* for (std::vector<KMerEdge*>::size_type i = 0; i < kmer_graph.size(); i++) {
-            
-            while (true) {
-                //kmer_graph[i]
-                break;
-            }
-            
-            prog++;
-            if (prog > (1024 * 256)) {
-                printf("\33[2K\r");
-                printf("%.3f", (((double) i) / ((double) kmer_graph.size())) * 100.0);
-                std::cout << "%" << std::flush;
-                prog = 0;
-            }
-        } */
-        
-        
-        
-        
         printf("\rMade %ld contigs\n", total_contigs);
         // process above
+        
+        
         
         output_stream << "\n";
         input_stream.close();
